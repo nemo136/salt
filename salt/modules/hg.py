@@ -6,15 +6,11 @@ Support for the Mercurial SCM
 # Import salt libs
 from salt import utils
 
-if utils.is_windows():
-    hg_binary = "hg.exe"
-else:
-    hg_binary = "hg"
-
-
-def _check_hg():
-    utils.check_or_die(hg_binary)
-
+def __virtual__():
+    '''
+    Only load if mercurial is available on the system
+    '''
+    return bool(utils.which('hg'))
 
 def revision(cwd, rev='tip', short=False, user=None):
     '''
@@ -38,8 +34,6 @@ def revision(cwd, rev='tip', short=False, user=None):
 
         salt '*' hg.revision /path/to/repo mybranch
     '''
-    _check_hg()
-
     cmd = 'hg id -i{short} {rev}'.format(
         short=' --debug' if not short else '',
         rev=' -r {0}'.format(rev))
@@ -71,8 +65,6 @@ def describe(cwd, rev='tip', user=None):
 
         salt '*' hg.describe /path/to/repo
     '''
-    _check_hg()
-
     cmd = "hg log -r {0} --template"\
             " '{{latesttag}}-{{latesttagdistance}}-{{node|short}}'".format(rev)
     desc = __salt__['cmd.run_stdout'](cmd, cwd=cwd, runas=user)
@@ -112,8 +104,6 @@ def archive(cwd, output, rev='tip', fmt=None, prefix=None, user=None):
 
         salt '*' hg.archive /path/to/repo output=/tmp/archive.tgz fmt=tgz
     '''
-    _check_hg()
-
     cmd = 'hg archive {output}{rev}{fmt}'.format(
         rev=' --rev {0}'.format(rev),
         output=output,
@@ -142,8 +132,6 @@ def pull(cwd, opts=None, user=None):
 
         salt '*' hg.pull /path/to/repo opts=-u
     '''
-    _check_hg()
-
     if not opts:
         opts = ''
     return __salt__['cmd.run']('hg pull {0}'.format(opts), cwd=cwd, runas=user)
@@ -171,8 +159,6 @@ def update(cwd, rev, force=False, user=None):
 
         salt devserver1 hg.update /path/to/repo somebranch
     '''
-    _check_hg()
-
     cmd = 'hg update {0}{1}'.format(rev, ' -C' if force else '')
     return __salt__['cmd.run'](cmd, cwd=cwd, runas=user)
 
@@ -199,8 +185,6 @@ def clone(cwd, repository, opts=None, user=None):
 
         salt '*' hg.clone /path/to/repo https://bitbucket.org/birkenfeld/sphinx
     '''
-    _check_hg()
-
     if not opts:
         opts = ''
     cmd = 'hg clone {0} {1} {2}'.format(repository, cwd, opts)
